@@ -20,6 +20,7 @@ model Raffle {
   updatedAt   DateTime @updatedAt
   
   tickets     Ticket[]
+  winnerTicketId Int?  // ID del ticket ganador (Lotería Nacional)
 }
 
 model Ticket {
@@ -47,6 +48,7 @@ model Purchase {
   totalAmount    Float
   mpPreferenceId String?
   mpPaymentId    String?
+  paymentMethod  String   @default("MERCADOPAGO") // MERCADOPAGO, TRANSFERENCIA, EFECTIVO
   status         String   @default("PENDING") // PENDING, APPROVED, REJECTED
   
   tickets        Ticket[]

@@ -2,13 +2,12 @@ import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import prisma from '@/lib/prisma';
 
-// Configura Mercado Pago (Usa tu Access Token)
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-0000000000000000-000000-00000000000000000000000000000000-000000000' });
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { selectedTickets, customer, ticketPrice } = body;
+    const { selectedTickets, customer, ticketPrice, paymentMethod = 'MERCADOPAGO' } = body;
 
     if (!selectedTickets || selectedTickets.length === 0) {
       return NextResponse.json({ error: 'No tickets selected' }, { status: 400 });
@@ -25,6 +24,7 @@ export async function POST(request) {
         customerPhone: customer.whatsapp,
         totalAmount: selectedTickets.length * ticketPrice,
         status: 'PENDING',
+        paymentMethod: paymentMethod,
       }
     });
 
@@ -40,39 +40,49 @@ export async function POST(request) {
       }
     });
 
-    const preference = new Preference(client);
+    if (paymentMethod === 'MERCADOPAGO') {
+      const preference = new Preference(client);
 
-    const items = selectedTickets.map(num => ({
-      id: `ticket-${num}`,
-      title: `Rifa Giorgio - Número ${num}`,
-      quantity: 1,
-      unit_price: Number(ticketPrice),
-      currency_id: 'ARS',
-    }));
+      const items = selectedTickets.map(num => ({
+        id: `ticket-${num}`,
+        title: `Rifa Giorgio - Número ${num}`,
+        quantity: 1,
+        unit_price: Number(ticketPrice),
+        currency_id: 'ARS',
+      }));
 
-    const response = await preference.create({
-      body: {
-        items,
-        payer: {
-          name: customer.name,
-          email: customer.email,
-          phone: {
-            number: customer.whatsapp,
-          }
-        },
-        back_urls: {
-          success: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}?status=success`,
-          failure: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}?status=failure`,
-          pending: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}?status=pending`,
-        },
-        auto_return: 'approved',
-        external_reference: `purchase_${purchase.id}` // Identificador único atado al DB ID
-      }
-    });
+      const response = await preference.create({
+        body: {
+          items,
+          payer: {
+            name: customer.name,
+            email: customer.email,
+            phone: {
+              number: customer.whatsapp,
+            }
+          },
+          back_urls: {
+            success: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}?status=success&purchaseId=${purchase.id}`,
+            failure: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}?status=failure`,
+            pending: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}?status=pending`,
+          },
+          auto_return: 'approved',
+          external_reference: `purchase_${purchase.id}` 
+        }
+      });
 
-    return NextResponse.json({ init_point: response.init_point });
+      return NextResponse.json({ init_point: response.init_point });
+    } else {
+      // Para Transferencia o Efectivo
+      return NextResponse.json({ 
+        success: true, 
+        purchaseId: purchase.id,
+        redirect: `/?status=pending_manual&purchaseId=${purchase.id}&method=${paymentMethod}`
+      });
+    }
+
   } catch (error) {
-    console.error('Error creating preference:', error);
-    return NextResponse.json({ error: 'Failed to create preference' }, { status: 500 });
+    console.error('Error creating checkout:', error);
+    return NextResponse.json({ error: 'Failed to process checkout' }, { status: 500 });
   }
 }

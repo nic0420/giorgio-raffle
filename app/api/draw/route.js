@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function POST() {
+export async function POST(request) {
   try {
+    const { winningNumber } = await request.json();
+
+    if (!winningNumber) {
+      return NextResponse.json({ error: 'Falta ingresar el número ganador' }, { status: 400 });
+    }
+
     const raffle = await prisma.raffle.findFirst({
       where: { status: 'ACTIVE' },
     });
@@ -11,23 +17,25 @@ export async function POST() {
       return NextResponse.json({ error: 'No active raffle' }, { status: 404 });
     }
 
-    const soldTickets = await prisma.ticket.findMany({
-      where: { raffleId: raffle.id, status: 'SOLD' },
+    const winningTicket = await prisma.ticket.findFirst({
+      where: { 
+        raffleId: raffle.id, 
+        number: parseInt(winningNumber)
+      },
       include: { purchase: true }
     });
 
-    if (soldTickets.length === 0) {
-      return NextResponse.json({ error: 'No sold tickets to draw from' }, { status: 400 });
+    if (!winningTicket || winningTicket.status !== 'SOLD') {
+      return NextResponse.json({ error: `El número ${winningNumber} no fue vendido. Sorteo vacante o revisá el número.` }, { status: 400 });
     }
 
-    // Sortear
-    const randomIndex = Math.floor(Math.random() * soldTickets.length);
-    const winningTicket = soldTickets[randomIndex];
-
-    // Actualizar raffle a DRAWN
+    // Actualizar raffle a DRAWN y guardar el ID del ticket ganador
     await prisma.raffle.update({
       where: { id: raffle.id },
-      data: { status: 'DRAWN' }
+      data: { 
+        status: 'DRAWN',
+        winnerTicketId: winningTicket.id
+      }
     });
 
     return NextResponse.json({
