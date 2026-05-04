@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
+
+// Configura Mercado Pago
+const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-0000' });
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    // Defaulting to TRANSFERENCIA since Mercado Pago manual falls into this category
-    const { selectedTickets, customer, ticketPrice, paymentMethod = 'TRANSFERENCIA' } = body;
+    const { selectedTickets, customer, ticketPrice, paymentMethod = 'MERCADOPAGO' } = body;
 
     if (!selectedTickets || selectedTickets.length === 0) {
       return NextResponse.json({ error: 'No tickets selected' }, { status: 400 });
@@ -22,7 +25,7 @@ export async function POST(request) {
         customerPhone: customer.whatsapp,
         totalAmount: selectedTickets.length * ticketPrice,
         status: 'PENDING',
-        paymentMethod: paymentMethod,
+        paymentMethod: 'MERCADOPAGO',
       }
     });
 
@@ -38,10 +41,39 @@ export async function POST(request) {
       }
     });
 
+    // 3. Crear Preferencia de Mercado Pago
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const preference = new Preference(client);
+    
+    const mpResponse = await preference.create({
+      body: {
+        items: [
+          {
+            id: `rifa_${raffle.id}`,
+            title: `Rifa Perfumería Giorgio - ${selectedTickets.length} Números`,
+            quantity: 1,
+            unit_price: selectedTickets.length * ticketPrice,
+            currency_id: 'ARS',
+          }
+        ],
+        payer: {
+          name: customer.name,
+          email: customer.email,
+        },
+        back_urls: {
+          success: `${baseUrl}/?status=success`,
+          failure: `${baseUrl}/?status=failure`,
+          pending: `${baseUrl}/?status=pending`,
+        },
+        auto_return: 'approved',
+        external_reference: `purchase_${purchase.id}`,
+      }
+    });
+
     return NextResponse.json({ 
       success: true, 
       purchaseId: purchase.id,
-      redirect: `/?status=pending_manual&purchaseId=${purchase.id}`
+      redirect: mpResponse.init_point
     });
 
   } catch (error) {

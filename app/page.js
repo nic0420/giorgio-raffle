@@ -78,7 +78,7 @@ export default function Home() {
           selectedTickets,
           customer,
           ticketPrice,
-          paymentMethod: 'TRANSFERENCIA'
+          paymentMethod: 'MERCADOPAGO'
         })
       });
 
@@ -99,28 +99,67 @@ export default function Home() {
 
   const totalAmount = selectedTickets.length * ticketPrice;
 
-  // Render modal for manual payment
   const renderStatusModal = () => {
-    if (!urlStatus || urlStatus !== 'pending_manual') return null;
+    if (!urlStatus) return null;
     
-    return (
-      <div className={styles.modalOverlay}>
-        <div className={styles.modalContent}>
-          <h2>¡Números Reservados! ⏳</h2>
-          <p>Tus números están reservados temporalmente.</p>
-          <div style={{backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'left'}}>
-            <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${(ticketPrice * 1 /* Assuming 1 for simplicity if lost state, but usually from DB. Actually just ask them to send receipt */)}</strong> o el monto total a:</p>
-            <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>nico.adolfo.mp</strong></p>
-            <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100004965726450</strong></p>
+    if (urlStatus === 'pending_manual') {
+      return (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2>¡Números Reservados! ⏳</h2>
+            <p>Tus números están reservados temporalmente.</p>
+            <div style={{backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'left'}}>
+              <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${(ticketPrice * 1)}</strong> o el monto total a:</p>
+              <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>nico.adolfo.mp</strong></p>
+              <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100004965726450</strong></p>
+            </div>
+            <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
+            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de pago a Mercado Pago.`, '_blank')}>
+              Enviar comprobante por WhatsApp
+            </button>
+            <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
           </div>
-          <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
-          <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de pago a Mercado Pago.`, '_blank')}>
-            Enviar comprobante por WhatsApp
-          </button>
-          <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (urlStatus === 'success') {
+      return (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2>¡Pago Aprobado! 🎉</h2>
+            <p>Tus números están confirmados para el sorteo.</p>
+            <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (urlStatus === 'failure') {
+      return (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2>El pago falló ❌</h2>
+            <p>Hubo un problema al procesar el pago. Por favor intenta nuevamente.</p>
+            <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (urlStatus === 'pending') {
+      return (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2>Pago Pendiente ⏳</h2>
+            <p>Estamos procesando tu pago. Te avisaremos cuando se acredite.</p>
+            <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -357,11 +396,10 @@ export default function Home() {
               
               <div className={styles.paymentMethods}>
                 <label className={`${styles.paymentMethod} ${styles.activeMethod}`}>
-                  <input type="radio" name="payment" value="TRANSFERENCIA" checked readOnly disabled={!isRaffleActive} />
+                  <input type="radio" name="payment" value="MERCADOPAGO" checked readOnly disabled={!isRaffleActive} />
                   <div className={styles.paymentMethodInfo}>
-                    <strong>Transferencia Mercado Pago</strong>
-                    <span>Alias: nico.adolfo.mp</span>
-                    <span>CVU: 0000003100004965726450</span>
+                    <strong>Mercado Pago</strong>
+                    <span>Paga seguro desde la app de Mercado Pago</span>
                   </div>
                   <img src="/mp-icon.png" alt="MercadoPago" className={styles.paymentIcon} />
                 </label>
@@ -376,7 +414,7 @@ export default function Home() {
               {isLoading ? 'PROCESANDO...' : '🔒 RESERVAR Y PAGAR'}
             </button>
             <div className={styles.securePayment}>
-              Se requerirá enviar el comprobante por WhatsApp.
+              Tu pago será procesado y acreditado automáticamente.
             </div>
           </div>
         </div>
@@ -424,6 +462,22 @@ export default function Home() {
               <div className={styles.winnerAvatar}></div>
             </div>
             <button className={styles.winnersBtn}>VER MÁS GANADORES</button>
+          </div>
+
+          <div className={styles.infoCard} id="contacto">
+            <h4 className={styles.infoCardTitle}>CONTACTO</h4>
+            <div style={{textAlign: 'left', lineHeight: '1.6'}}>
+              <p>🎩 <strong>Perfumería Giorgio</strong></p>
+              <p>💎 Perfumes masculinos & extractos premium</p>
+              <p>📦 Minorista y mayorista</p>
+              <p>📍 Irigoyen 2498, Ctes Cap.</p>
+              <p>🕐 Lun a Sáb 9 a 13 y 18 a 21:30</p>
+              <p style={{marginTop: '1rem'}}>
+                <a href="https://wa.me/5493794180451" target="_blank" rel="noreferrer" style={{color: '#25D366', textDecoration: 'none', fontWeight: 'bold'}}>
+                  WhatsApp: +54 9 3794180451
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>
