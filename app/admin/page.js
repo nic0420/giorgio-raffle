@@ -14,6 +14,10 @@ export default function AdminPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [winningNumber, setWinningNumber] = useState('');
 
+  // Raffle Management State
+  const [raffleForm, setRaffleForm] = useState({ id: null, title: '', description: '', price: 10000, totalTickets: 100, drawDate: '' });
+  const [isSavingRaffle, setIsSavingRaffle] = useState(false);
+
   const loadData = () => {
     fetch('/api/admin/stats')
       .then(res => res.json())
@@ -26,6 +30,22 @@ export default function AdminPanel() {
       .then(res => res.json())
       .then(data => {
         if (!data.error) setPurchases(data.purchases || []);
+      })
+      .catch(console.error);
+
+    fetch('/api/admin/raffle')
+      .then(res => res.json())
+      .then(data => {
+        if (data.raffle) {
+          setRaffleForm({
+            id: data.raffle.id,
+            title: data.raffle.title || '',
+            description: data.raffle.description || '',
+            price: data.raffle.price || 10000,
+            totalTickets: data.raffle.totalTickets || 100,
+            drawDate: data.raffle.drawDate ? new Date(data.raffle.drawDate).toISOString().slice(0, 16) : ''
+          });
+        }
       })
       .catch(console.error);
   };
@@ -117,6 +137,33 @@ export default function AdminPanel() {
     }
   };
 
+  const handleSaveRaffle = async (e) => {
+    e.preventDefault();
+    if (!confirm(raffleForm.id ? '¿Guardar cambios en el sorteo actual?' : '¿Crear un NUEVO sorteo? Esto cerrará el sorteo anterior y generará nuevos números.')) return;
+    
+    setIsSavingRaffle(true);
+    try {
+      const isNew = !raffleForm.id;
+      const res = await fetch('/api/admin/raffle', {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(raffleForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(isNew ? 'Sorteo creado exitosamente. Números generados.' : 'Sorteo actualizado.');
+        loadData(); // Recargar todo
+      } else {
+        alert(data.error || 'Error al guardar');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
+    } finally {
+      setIsSavingRaffle(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className={styles.main} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -166,6 +213,43 @@ export default function AdminPanel() {
               {stats.status}
             </div>
           </div>
+        </div>
+
+        {/* GESTIÓN DE SORTEO */}
+        <div className={styles.panel} style={{ marginTop: '2rem' }}>
+          <h2 style={{ marginBottom: '1.5rem' }}>Gestión de Sorteo</h2>
+          <form onSubmit={handleSaveRaffle} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+              <label>Título del Premio</label>
+              <input type="text" className={styles.input} value={raffleForm.title} onChange={e => setRaffleForm({...raffleForm, title: e.target.value})} required placeholder="Ej: 10 Perfumes Grandes" />
+            </div>
+            <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+              <label>Descripción detallada</label>
+              <textarea className={styles.input} rows="3" value={raffleForm.description} onChange={e => setRaffleForm({...raffleForm, description: e.target.value})} placeholder="Detalles de los premios..."></textarea>
+            </div>
+            <div className={styles.formGroup}>
+              <label>Precio por Número ($)</label>
+              <input type="number" className={styles.input} value={raffleForm.price} onChange={e => setRaffleForm({...raffleForm, price: e.target.value})} required min="1" />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Total de Números</label>
+              <input type="number" className={styles.input} value={raffleForm.totalTickets} onChange={e => setRaffleForm({...raffleForm, totalTickets: e.target.value})} required min="10" disabled={!!raffleForm.id} title={raffleForm.id ? "No se puede cambiar la cantidad de números de un sorteo ya creado." : ""} />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Fecha del Sorteo</label>
+              <input type="datetime-local" className={styles.input} value={raffleForm.drawDate} onChange={e => setRaffleForm({...raffleForm, drawDate: e.target.value})} required />
+            </div>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button type="submit" className={styles.payButton} disabled={isSavingRaffle} style={{ margin: 0 }}>
+                {isSavingRaffle ? 'Guardando...' : (raffleForm.id ? '💾 Guardar Cambios' : '✨ Crear Nuevo Sorteo')}
+              </button>
+              {raffleForm.id && (
+                <button type="button" onClick={() => setRaffleForm({ id: null, title: '', description: '', price: 10000, totalTickets: 100, drawDate: '' })} className={styles.payButton} style={{ margin: 0, backgroundColor: '#666' }}>
+                  ➕ Limpiar para Crear Nuevo
+                </button>
+              )}
+            </div>
+          </form>
         </div>
 
         {/* COMPRAS PENDIENTES / APROBADAS */}

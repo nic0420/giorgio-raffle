@@ -4,7 +4,8 @@ import prisma from '@/lib/prisma';
 export async function GET() {
   try {
     const raffle = await prisma.raffle.findFirst({
-      where: { status: 'ACTIVE' },
+      where: { status: { in: ['ACTIVE', 'DRAWN', 'COMPLETED'] } },
+      orderBy: { createdAt: 'desc' },
       include: {
         tickets: true
       }

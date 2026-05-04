@@ -9,21 +9,26 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   
   // Real State from DB
-  const [raffleInfo, setRaffleInfo] = useState({ id: 0, price: 10000, totalTickets: 100, drawDate: '2026-06-01T00:00:00.000Z', status: 'ACTIVE' });
+  const [raffleInfo, setRaffleInfo] = useState({ id: 0, title: 'Cargando Sorteo...', description: '', price: 10000, totalTickets: 100, drawDate: '2026-06-01T00:00:00.000Z', status: 'ACTIVE' });
   const [ticketsStatus, setTicketsStatus] = useState({});
   const [winnerData, setWinnerData] = useState(null);
   const [isFetching, setIsFetching] = useState(true);
 
   // Status params
   const [urlStatus, setUrlStatus] = useState(null);
+  const [urlTotal, setUrlTotal] = useState(null);
 
   useEffect(() => {
     // Check URL parameters for payment status
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const status = urlParams.get('status');
+      const totalParam = urlParams.get('total');
       if (status) {
         setUrlStatus(status);
+      }
+      if (totalParam) {
+        setUrlTotal(totalParam);
       }
     }
 
@@ -51,6 +56,33 @@ export default function Home() {
   const totalTickets = raffleInfo.totalTickets;
   const soldCount = Object.values(ticketsStatus).filter(s => s === 'SOLD').length;
   const isRaffleActive = raffleInfo.status === 'ACTIVE';
+
+  // Countdown logic
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    if (!raffleInfo.drawDate) return;
+    
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const drawTime = new Date(raffleInfo.drawDate).getTime();
+      const distance = drawTime - now;
+
+      if (distance < 0) {
+        clearInterval(interval);
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        setTimeLeft({
+          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((distance % (1000 * 60)) / 1000)
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [raffleInfo.drawDate]);
 
   const handleTicketClick = (num) => {
     if (!isRaffleActive) return;
@@ -87,7 +119,7 @@ export default function Home() {
       if (data.redirect) {
         window.location.href = data.redirect;
       } else {
-        alert("Hubo un error al procesar el pago. Por favor intenta de nuevo.");
+        alert("Hubo un error al procesar el pago. Por favor intenta de nuevo.\n\nDetalle: " + (data.details || data.error || "Error desconocido"));
       }
     } catch (error) {
       console.error(error);
@@ -109,7 +141,7 @@ export default function Home() {
             <h2>¡Números Reservados! ⏳</h2>
             <p>Tus números están reservados temporalmente.</p>
             <div style={{backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'left'}}>
-              <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${(ticketPrice * 1)}</strong> o el monto total a:</p>
+              <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${urlTotal || totalAmount}</strong> o el monto total a:</p>
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>nico.adolfo.mp</strong></p>
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100004965726450</strong></p>
             </div>
@@ -198,9 +230,8 @@ export default function Home() {
         <div className={`container ${styles.heroContent}`}>
           <div className={styles.heroText}>
             <div className={styles.badge}>{isRaffleActive ? '⭐ SORTEO ACTIVO' : 'CERRADO'}</div>
-            <h1>GANÁ TU<br/>COLECCIÓN<br/>DE PERFUMES</h1>
-            <h3 className={styles.subtitle}>10 PERFUMES GRANDES A ELECCIÓN</h3>
-            <p>El ganador podrá elegir 10 perfumes<br/>grandes de nuestra colección.</p>
+            <h1 style={{textTransform: 'uppercase'}}>{raffleInfo.title.split(' ').map((word, i) => <span key={i}>{word}<br/></span>)}</h1>
+            <p style={{marginTop: '1rem', fontSize: '1.1rem'}}>{raffleInfo.description}</p>
             
             <div className={styles.features}>
               <div className={styles.feature}>
@@ -253,17 +284,17 @@ export default function Home() {
             <div className={styles.statusLabel}>CIERRE DE VENTAS EN</div>
             <div className={styles.statusValue}>
               <div className={styles.countdown}>
-                <div><strong>2</strong><span>DÍAS</span></div> :
-                <div><strong>14</strong><span>HORAS</span></div> :
-                <div><strong>26</strong><span>MIN</span></div> :
-                <div><strong>38</strong><span>SEG</span></div>
+                <div><strong>{timeLeft.days}</strong><span>DÍAS</span></div> :
+                <div><strong>{timeLeft.hours}</strong><span>HORAS</span></div> :
+                <div><strong>{timeLeft.minutes}</strong><span>MIN</span></div> :
+                <div><strong>{timeLeft.seconds}</strong><span>SEG</span></div>
               </div>
             </div>
           </div>
           <div className={styles.divider}></div>
           <div className={styles.statusItem}>
             <div className={styles.statusLabel}>SORTEO</div>
-            <div className={styles.statusDate}>SÁBADO 01/06/2026</div>
+            <div className={styles.statusDate}>{new Date(raffleInfo.drawDate).toLocaleDateString('es-AR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).toUpperCase()}</div>
             <div className={styles.statusSubDate}>Por Lotería Nacional Nocturna</div>
           </div>
         </div>
@@ -446,9 +477,9 @@ export default function Home() {
             <h4 className={styles.infoCardTitle}>¿CÓMO FUNCIONA?</h4>
             <ol className={styles.stepsList}>
               <li>Elegís tus números del 1 al {totalTickets}.</li>
-              <li>Completás tus datos y transferís el total.</li>
-              <li>Nos enviás el comprobante por WhatsApp.</li>
-              <li>El sorteo se realizará por <strong>Lotería Nacional Nocturna</strong> el día <strong>01/06/2026</strong>.</li>
+              <li>Completás tus datos y pagás de forma segura con Mercado Pago.</li>
+              <li>El comprobante y tus números llegarán por WhatsApp/Email.</li>
+              <li>El sorteo se realizará por <strong>Lotería Nacional Nocturna</strong> el día <strong>{new Date(raffleInfo.drawDate).toLocaleDateString('es-AR')}</strong>.</li>
             </ol>
           </div>
 
@@ -492,7 +523,7 @@ export default function Home() {
             <span style={{fontSize: '1.2rem', marginRight: '0.5rem'}}>🎁</span>
             <div>
               <strong>PREMIO INCREÍBLE</strong>
-              <div>10 perfumes grandes a elección del ganador.</div>
+              <div>{raffleInfo.title}</div>
             </div>
           </div>
           <div className={styles.footerCol}>

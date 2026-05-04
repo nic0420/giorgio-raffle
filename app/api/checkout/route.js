@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-// Configura Mercado Pago
-const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-0000' });
-
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -25,7 +22,7 @@ export async function POST(request) {
         customerPhone: customer.whatsapp,
         totalAmount: selectedTickets.length * ticketPrice,
         status: 'PENDING',
-        paymentMethod: 'MERCADOPAGO',
+        paymentMethod: paymentMethod,
       }
     });
 
@@ -42,6 +39,14 @@ export async function POST(request) {
     });
 
     // 3. Crear Preferencia de Mercado Pago
+    const token = process.env.MP_ACCESS_TOKEN;
+    if (!token || token.includes('TEST-0000')) {
+      return NextResponse.json({ 
+        error: 'El sistema no tiene un token de Mercado Pago configurado correctamente. Por favor, agregá tu MP_ACCESS_TOKEN real en el archivo .env' 
+      }, { status: 500 });
+    }
+
+    const client = new MercadoPagoConfig({ accessToken: token });
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const preference = new Preference(client);
     
@@ -50,7 +55,7 @@ export async function POST(request) {
         items: [
           {
             id: `rifa_${raffle.id}`,
-            title: `Rifa Perfumería Giorgio - ${selectedTickets.length} Números`,
+            title: `${raffle.title} - ${selectedTickets.length} Números`,
             quantity: 1,
             unit_price: selectedTickets.length * ticketPrice,
             currency_id: 'ARS',
@@ -78,6 +83,6 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error creating checkout:', error);
-    return NextResponse.json({ error: 'Failed to process checkout' }, { status: 500 });
+    return NextResponse.json({ error: 'Hubo un problema al procesar el pago con Mercado Pago. Verificá que el Access Token sea válido.' }, { status: 500 });
   }
 }
