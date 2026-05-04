@@ -6,12 +6,12 @@ import styles from './page.module.css';
 export default function Home() {
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [customer, setCustomer] = useState({ name: '', whatsapp: '', email: '' });
-  const [paymentMethod, setPaymentMethod] = useState('TRANSFERENCIA');
   const [isLoading, setIsLoading] = useState(false);
   
   // Real State from DB
-  const [raffleInfo, setRaffleInfo] = useState({ price: 10000, totalTickets: 100, drawDate: '2026-06-01T00:00:00.000Z' });
+  const [raffleInfo, setRaffleInfo] = useState({ id: 0, price: 10000, totalTickets: 100, drawDate: '2026-06-01T00:00:00.000Z', status: 'ACTIVE' });
   const [ticketsStatus, setTicketsStatus] = useState({});
+  const [winnerData, setWinnerData] = useState(null);
   const [isFetching, setIsFetching] = useState(true);
 
   // Status params
@@ -35,6 +35,9 @@ export default function Home() {
           setRaffleInfo(data.raffle);
           setTicketsStatus(data.tickets);
         }
+        if (data.winner) {
+          setWinnerData(data.winner);
+        }
       } catch (err) {
         console.error('Failed to load raffle:', err);
       } finally {
@@ -47,8 +50,10 @@ export default function Home() {
   const ticketPrice = raffleInfo.price;
   const totalTickets = raffleInfo.totalTickets;
   const soldCount = Object.values(ticketsStatus).filter(s => s === 'SOLD').length;
+  const isRaffleActive = raffleInfo.status === 'ACTIVE';
 
   const handleTicketClick = (num) => {
+    if (!isRaffleActive) return;
     const status = ticketsStatus[num];
     if (status === 'SOLD' || status === 'RESERVED') return;
     
@@ -73,15 +78,13 @@ export default function Home() {
           selectedTickets,
           customer,
           ticketPrice,
-          paymentMethod
+          paymentMethod: 'TRANSFERENCIA'
         })
       });
 
       const data = await res.json();
       
-      if (data.init_point) {
-        window.location.href = data.init_point;
-      } else if (data.redirect) {
+      if (data.redirect) {
         window.location.href = data.redirect;
       } else {
         alert("Hubo un error al procesar el pago. Por favor intenta de nuevo.");
@@ -96,42 +99,28 @@ export default function Home() {
 
   const totalAmount = selectedTickets.length * ticketPrice;
 
-  // Render modal for success or manual payment
+  // Render modal for manual payment
   const renderStatusModal = () => {
-    if (!urlStatus) return null;
+    if (!urlStatus || urlStatus !== 'pending_manual') return null;
     
-    if (urlStatus === 'success') {
-      return (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h2>¡Pago Exitoso! 🎉</h2>
-            <p>Tus números han sido confirmados. Te enviamos un email con los detalles.</p>
-            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Acabo de comprar números en la rifa. Mi email es ${customer.email || ''}`, '_blank')}>
-              Confirmar por WhatsApp
-            </button>
-            <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Volver al inicio</button>
+    return (
+      <div className={styles.modalOverlay}>
+        <div className={styles.modalContent}>
+          <h2>¡Números Reservados! ⏳</h2>
+          <p>Tus números están reservados temporalmente.</p>
+          <div style={{backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'left'}}>
+            <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${(ticketPrice * 1 /* Assuming 1 for simplicity if lost state, but usually from DB. Actually just ask them to send receipt */)}</strong> o el monto total a:</p>
+            <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>nico.adolfo.mp</strong></p>
+            <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100004965726450</strong></p>
           </div>
+          <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
+          <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de pago a Mercado Pago.`, '_blank')}>
+            Enviar comprobante por WhatsApp
+          </button>
+          <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
         </div>
-      );
-    }
-    if (urlStatus === 'pending_manual') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const method = urlParams.get('method');
-      return (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h2>¡Números Reservados! ⏳</h2>
-            <p>Elegiste pagar mediante <strong>{method}</strong>.</p>
-            <p>Tus números están reservados por 1 hora. Por favor, envianos el comprobante por WhatsApp para confirmarlos definitivamente.</p>
-            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números pagando con ${method}. Acá te mando el comprobante.`, '_blank')}>
-              Enviar comprobante por WhatsApp
-            </button>
-            <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
-          </div>
-        </div>
-      );
-    }
-    return null;
+      </div>
+    );
   };
 
   return (
@@ -156,11 +145,20 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Winner Banner */}
+      {winnerData && (
+        <div style={{backgroundColor: '#000', color: '#fff', textAlign: 'center', padding: '2rem 1rem'}}>
+          <h2 style={{color: '#d4af37', fontSize: '2rem', marginBottom: '0.5rem'}}>¡SORTEO FINALIZADO! 🎉</h2>
+          <p style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>El número ganador de la Lotería fue el <strong>#{winnerData.number}</strong></p>
+          <p style={{fontSize: '1rem'}}>¡Felicitaciones a <strong>{winnerData.name}</strong> por llevarse la colección de perfumes!</p>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className={styles.hero} id="inicio">
         <div className={`container ${styles.heroContent}`}>
           <div className={styles.heroText}>
-            <div className={styles.badge}>⭐ SORTEO ACTIVO</div>
+            <div className={styles.badge}>{isRaffleActive ? '⭐ SORTEO ACTIVO' : 'CERRADO'}</div>
             <h1>GANÁ TU<br/>COLECCIÓN<br/>DE PERFUMES</h1>
             <h3 className={styles.subtitle}>10 PERFUMES GRANDES A ELECCIÓN</h3>
             <p>El ganador podrá elegir 10 perfumes<br/>grandes de nuestra colección.</p>
@@ -254,7 +252,7 @@ export default function Home() {
                 </div>
                 <div className={styles.legendItem}>
                   <div className={`${styles.dot} ${styles.sold}`}></div>
-                  Vendido
+                  Vendido / Reservado
                 </div>
               </div>
             </div>
@@ -268,7 +266,7 @@ export default function Home() {
                   <button
                     key={num}
                     className={`${styles.ticket} ${isSelected ? styles.selected : ''}`}
-                    disabled={isSoldOrReserved || isFetching}
+                    disabled={isSoldOrReserved || isFetching || !isRaffleActive}
                     onClick={() => handleTicketClick(num)}
                   >
                     {num}
@@ -327,6 +325,7 @@ export default function Home() {
                   placeholder="Ej: Juan Pérez"
                   value={customer.name}
                   onChange={(e) => setCustomer({...customer, name: e.target.value})}
+                  disabled={!isRaffleActive}
                 />
               </div>
               <div className={styles.formGroup}>
@@ -337,6 +336,7 @@ export default function Home() {
                   placeholder="Ej: 11 2345 6789"
                   value={customer.whatsapp}
                   onChange={(e) => setCustomer({...customer, whatsapp: e.target.value})}
+                  disabled={!isRaffleActive}
                 />
               </div>
               <div className={styles.formGroup}>
@@ -347,52 +347,36 @@ export default function Home() {
                   placeholder="Ej: juan@email.com"
                   value={customer.email}
                   onChange={(e) => setCustomer({...customer, email: e.target.value})}
+                  disabled={!isRaffleActive}
                 />
               </div>
             </div>
 
             <div style={{marginTop: '2rem'}}>
-              <h3 className={styles.sectionTitle}>MÉTODOS DE PAGO</h3>
+              <h3 className={styles.sectionTitle}>MÉTODO DE PAGO</h3>
               
               <div className={styles.paymentMethods}>
-                <label className={`${styles.paymentMethod} ${paymentMethod === 'TRANSFERENCIA' ? styles.activeMethod : ''}`}>
-                  <input type="radio" name="payment" value="TRANSFERENCIA" checked={paymentMethod === 'TRANSFERENCIA'} onChange={(e) => setPaymentMethod(e.target.value)} />
+                <label className={`${styles.paymentMethod} ${styles.activeMethod}`}>
+                  <input type="radio" name="payment" value="TRANSFERENCIA" checked readOnly disabled={!isRaffleActive} />
                   <div className={styles.paymentMethodInfo}>
-                    <strong>Transferencia bancaria</strong>
-                    <span>Te enviamos los datos para transferir.</span>
-                  </div>
-                  <img src="/bank-icon.png" alt="Bank" className={styles.paymentIcon} />
-                </label>
-                
-                <label className={`${styles.paymentMethod} ${paymentMethod === 'MERCADOPAGO' ? styles.activeMethod : ''}`}>
-                  <input type="radio" name="payment" value="MERCADOPAGO" checked={paymentMethod === 'MERCADOPAGO'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                  <div className={styles.paymentMethodInfo}>
-                    <strong>Mercado Pago</strong>
-                    <span>Pagá con tarjeta, saldo en cuenta o efectivo.</span>
+                    <strong>Transferencia Mercado Pago</strong>
+                    <span>Alias: nico.adolfo.mp</span>
+                    <span>CVU: 0000003100004965726450</span>
                   </div>
                   <img src="/mp-icon.png" alt="MercadoPago" className={styles.paymentIcon} />
-                </label>
-
-                <label className={`${styles.paymentMethod} ${paymentMethod === 'EFECTIVO' ? styles.activeMethod : ''}`}>
-                  <input type="radio" name="payment" value="EFECTIVO" checked={paymentMethod === 'EFECTIVO'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                  <div className={styles.paymentMethodInfo}>
-                    <strong>Efectivo (Rapipago / Pago Fácil)</strong>
-                    <span>Te enviamos un código para pagar.</span>
-                  </div>
-                  <img src="/cash-icon.png" alt="Cash" className={styles.paymentIcon} />
                 </label>
               </div>
             </div>
 
             <button 
               className={styles.payButton}
-              disabled={selectedTickets.length === 0 || !customer.name || !customer.whatsapp || !customer.email || isLoading}
+              disabled={selectedTickets.length === 0 || !customer.name || !customer.whatsapp || !customer.email || isLoading || !isRaffleActive}
               onClick={handlePayment}
             >
-              {isLoading ? 'PROCESANDO...' : '🔒 IR A PAGAR'}
+              {isLoading ? 'PROCESANDO...' : '🔒 RESERVAR Y PAGAR'}
             </button>
             <div className={styles.securePayment}>
-              ✓ Pago 100% seguro
+              Se requerirá enviar el comprobante por WhatsApp.
             </div>
           </div>
         </div>
@@ -424,8 +408,8 @@ export default function Home() {
             <h4 className={styles.infoCardTitle}>¿CÓMO FUNCIONA?</h4>
             <ol className={styles.stepsList}>
               <li>Elegís tus números del 1 al {totalTickets}.</li>
-              <li>Completás tus datos y realizás el pago.</li>
-              <li>Recibís tu número al instante por WhatsApp.</li>
+              <li>Completás tus datos y transferís el total.</li>
+              <li>Nos enviás el comprobante por WhatsApp.</li>
               <li>El sorteo se realizará por <strong>Lotería Nacional Nocturna</strong> el día <strong>01/06/2026</strong>.</li>
             </ol>
           </div>
