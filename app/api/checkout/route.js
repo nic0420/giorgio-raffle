@@ -57,7 +57,7 @@ export async function POST(request) {
             id: `rifa_${raffle.id}`,
             title: `${raffle.title} - ${selectedTickets.length} Números`,
             quantity: 1,
-            unit_price: selectedTickets.length * ticketPrice,
+            unit_price: Number(ticketPrice) * selectedTickets.length,
             currency_id: 'ARS',
           }
         ],
@@ -83,6 +83,8 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error creating checkout:', error);
-    return NextResponse.json({ error: 'Hubo un problema al procesar el pago con Mercado Pago. Verificá que el Access Token sea válido.' }, { status: 500 });
+    // Mercado Pago throws an error object with a response property usually
+    const mpErrorDetails = error.response ? JSON.stringify(error.response) : error.message;
+    return NextResponse.json({ error: `Hubo un problema al procesar el pago con Mercado Pago. Verificá que el Access Token sea válido. Detalles: ${mpErrorDetails}` }, { status: 500 });
   }
 }
