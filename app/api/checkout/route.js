@@ -47,7 +47,7 @@ export async function POST(request) {
     }
 
     const client = new MercadoPagoConfig({ accessToken: token });
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const origin = new URL(request.url).origin;
     const preference = new Preference(client);
     
     const mpResponse = await preference.create({
@@ -66,9 +66,9 @@ export async function POST(request) {
           email: customer.email,
         },
         back_urls: {
-          success: `${baseUrl}/?status=success`,
-          failure: `${baseUrl}/?status=failure`,
-          pending: `${baseUrl}/?status=pending`,
+          success: `${origin}/?status=success`,
+          failure: `${origin}/?status=failure`,
+          pending: `${origin}/?status=pending`,
         },
         auto_return: 'approved',
         external_reference: `purchase_${purchase.id}`,
