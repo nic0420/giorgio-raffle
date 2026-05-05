@@ -260,7 +260,7 @@ export default function Home() {
             </div>
           </div>
           <div className={styles.heroImageWrapper}>
-            <img src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=800" alt="Colección de Perfumes" className={styles.heroImage} />
+            <img src={raffleInfo.images && raffleInfo.images.length > 0 ? raffleInfo.images[0] : "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=800"} alt="Premio del Sorteo" className={styles.heroImage} />
             <div className={styles.floatingBadge}>
               <strong>👥 HASTA 5 NÚMEROS<br/>POR PERSONA</strong>
               <span>Para que más personas<br/>tengan la oportunidad<br/>de ganar.</span>

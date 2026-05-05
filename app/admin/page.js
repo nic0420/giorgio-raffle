@@ -15,7 +15,7 @@ export default function AdminPanel() {
   const [winningNumber, setWinningNumber] = useState('');
 
   // Raffle Management State
-  const [raffleForm, setRaffleForm] = useState({ id: null, title: '', description: '', price: 10000, totalTickets: 100, drawDate: '' });
+  const [raffleForm, setRaffleForm] = useState({ id: null, title: '', description: '', price: 10000, totalTickets: 100, drawDate: '', imageUrl: '' });
   const [isSavingRaffle, setIsSavingRaffle] = useState(false);
 
   const loadData = () => {
@@ -43,7 +43,8 @@ export default function AdminPanel() {
             description: data.raffle.description || '',
             price: data.raffle.price || 10000,
             totalTickets: data.raffle.totalTickets || 100,
-            drawDate: data.raffle.drawDate ? new Date(data.raffle.drawDate).toISOString().slice(0, 16) : ''
+            drawDate: data.raffle.drawDate ? new Date(data.raffle.drawDate).toISOString().slice(0, 16) : '',
+            imageUrl: data.raffle.images && data.raffle.images.length > 0 ? data.raffle.images[0] : ''
           });
         }
       })
@@ -80,6 +81,28 @@ export default function AdminPanel() {
         loadData(); // Recargar
       } else {
         alert(data.error || 'Error al aprobar');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
+    }
+  };
+
+  const handleDeletePurchase = async (purchaseId) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar a este cliente? Esto liberará sus números.')) return;
+    
+    try {
+      const res = await fetch('/api/admin/purchases', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaseId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Cliente eliminado y números liberados.');
+        loadData(); // Recargar
+      } else {
+        alert(data.error || 'Error al eliminar');
       }
     } catch (err) {
       console.error(err);
@@ -227,6 +250,10 @@ export default function AdminPanel() {
               <label>Descripción detallada</label>
               <textarea className={styles.input} rows="3" value={raffleForm.description} onChange={e => setRaffleForm({...raffleForm, description: e.target.value})} placeholder="Detalles de los premios..."></textarea>
             </div>
+            <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+              <label>URL de Imagen del Premio (Opcional)</label>
+              <input type="url" className={styles.input} value={raffleForm.imageUrl} onChange={e => setRaffleForm({...raffleForm, imageUrl: e.target.value})} placeholder="https://ejemplo.com/imagen.jpg" />
+            </div>
             <div className={styles.formGroup}>
               <label>Precio por Número ($)</label>
               <input type="number" className={styles.input} value={raffleForm.price} onChange={e => setRaffleForm({...raffleForm, price: e.target.value})} required min="1" />
@@ -244,11 +271,16 @@ export default function AdminPanel() {
                 {isSavingRaffle ? 'Guardando...' : (raffleForm.id ? '💾 Guardar Cambios' : '✨ Crear Nuevo Sorteo')}
               </button>
               {raffleForm.id && (
-                <button type="button" onClick={() => setRaffleForm({ id: null, title: '', description: '', price: 10000, totalTickets: 100, drawDate: '' })} className={styles.payButton} style={{ margin: 0, backgroundColor: '#666' }}>
+                <button type="button" onClick={() => setRaffleForm({ id: null, title: '', description: '', price: 10000, totalTickets: 100, drawDate: '', imageUrl: '' })} className={styles.payButton} style={{ margin: 0, backgroundColor: '#666' }}>
                   ➕ Limpiar para Crear Nuevo
                 </button>
               )}
             </div>
+            {!raffleForm.id && (
+              <div style={{ gridColumn: '1 / -1', fontSize: '0.85rem', color: '#666', marginTop: '0.5rem' }}>
+                💡 Nota: Al crear un nuevo sorteo, el historial de compras y clientes del sorteo anterior quedará oculto (archivado automáticamente) para que empieces desde cero en esta pantalla.
+              </div>
+            )}
           </form>
         </div>
 
@@ -282,11 +314,18 @@ export default function AdminPanel() {
                     {p.status === 'PENDING' && (
                       <button 
                         onClick={() => handleApprove(p.id)}
-                        style={{ backgroundColor: '#25D366', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                        style={{ backgroundColor: '#25D366', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginRight: '0.5rem' }}
                       >
                         Aprobar
                       </button>
                     )}
+                    <button 
+                      onClick={() => handleDeletePurchase(p.id)}
+                      style={{ backgroundColor: '#ff4444', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                      title="Eliminar cliente y liberar números"
+                    >
+                      ❌ Eliminar
+                    </button>
                   </td>
                 </tr>
               ))}

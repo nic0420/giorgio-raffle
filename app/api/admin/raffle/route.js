@@ -33,7 +33,8 @@ export async function POST(request) {
         price: parseFloat(price) || 1000,
         totalTickets: parseInt(totalTickets) || 100,
         drawDate: drawDate ? new Date(drawDate) : null,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        images: body.imageUrl ? [body.imageUrl] : []
       }
     });
 
@@ -69,6 +70,7 @@ export async function PUT(request) {
         description: description,
         price: parseFloat(price),
         drawDate: drawDate ? new Date(drawDate) : null,
+        ...(body.imageUrl !== undefined && { images: body.imageUrl ? [body.imageUrl] : [] })
       }
     });
 

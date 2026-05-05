@@ -40,10 +40,12 @@ export async function GET() {
       raffle: {
         id: raffle.id,
         title: raffle.title,
+        description: raffle.description,
         price: raffle.price,
         drawDate: raffle.drawDate,
         totalTickets: raffle.totalTickets,
-        status: raffle.status
+        status: raffle.status,
+        images: raffle.images
       },
       tickets: ticketsStatus,
       winner: winnerInfo
