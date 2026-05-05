@@ -38,7 +38,15 @@ export async function POST(request) {
       }
     });
 
-    // 3. Crear Preferencia de Mercado Pago
+    // 3. Crear Preferencia de Mercado Pago (o saltar si es transferencia)
+    if (paymentMethod === 'TRANSFER') {
+      return NextResponse.json({
+        success: true,
+        purchaseId: purchase.id,
+        redirect: `/?status=pending_manual&total=${selectedTickets.length * ticketPrice}`
+      });
+    }
+
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token || token.includes('TEST-0000')) {
       return NextResponse.json({ 

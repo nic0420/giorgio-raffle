@@ -7,6 +7,7 @@ export default function Home() {
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [customer, setCustomer] = useState({ name: '', whatsapp: '', email: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('MERCADOPAGO');
   
   // Real State from DB
   const [raffleInfo, setRaffleInfo] = useState({ id: 0, title: 'Cargando Sorteo...', description: '', price: 10000, totalTickets: 100, drawDate: '2026-06-01T00:00:00.000Z', status: 'ACTIVE' });
@@ -110,7 +111,7 @@ export default function Home() {
           selectedTickets,
           customer,
           ticketPrice,
-          paymentMethod: 'MERCADOPAGO'
+          paymentMethod
         })
       });
 
@@ -142,11 +143,12 @@ export default function Home() {
             <p>Tus números están reservados temporalmente.</p>
             <div style={{backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'left'}}>
               <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${urlTotal || totalAmount}</strong> o el monto total a:</p>
-              <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>nico.adolfo.mp</strong></p>
+              <p style={{margin: '0 0 0.5rem', color: '#000'}}>Nombre: <strong>Jose Maria Vigiano</strong></p>
+              <p style={{margin: '0 0 0.5rem', color: '#000'}}>CUIT/CUIL: <strong>20-38309837-9</strong></p>
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100033661836008</strong></p>
             </div>
             <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
-            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de pago a Mercado Pago.`, '_blank')}>
+            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de transferencia.`, '_blank')}>
               Enviar comprobante por WhatsApp
             </button>
             <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
@@ -426,13 +428,21 @@ export default function Home() {
               <h3 className={styles.sectionTitle}>MÉTODO DE PAGO</h3>
               
               <div className={styles.paymentMethods}>
-                <label className={`${styles.paymentMethod} ${styles.activeMethod}`}>
-                  <input type="radio" name="payment" value="MERCADOPAGO" checked readOnly disabled={!isRaffleActive} />
+                <label className={`${styles.paymentMethod} ${paymentMethod === 'MERCADOPAGO' ? styles.activeMethod : ''}`}>
+                  <input type="radio" name="payment" value="MERCADOPAGO" checked={paymentMethod === 'MERCADOPAGO'} onChange={() => setPaymentMethod('MERCADOPAGO')} disabled={!isRaffleActive} />
                   <div className={styles.paymentMethodInfo}>
                     <strong>Mercado Pago</strong>
                     <span>Paga seguro desde la app de Mercado Pago</span>
                   </div>
                   <img src="/mp-icon.png" alt="MercadoPago" className={styles.paymentIcon} />
+                </label>
+                <label className={`${styles.paymentMethod} ${paymentMethod === 'TRANSFER' ? styles.activeMethod : ''}`} style={{marginTop: '1rem'}}>
+                  <input type="radio" name="payment" value="TRANSFER" checked={paymentMethod === 'TRANSFER'} onChange={() => setPaymentMethod('TRANSFER')} disabled={!isRaffleActive} />
+                  <div className={styles.paymentMethodInfo}>
+                    <strong>Transferencia Bancaria / Otras Billeteras</strong>
+                    <span>Transfiere desde tu banco o billetera virtual</span>
+                  </div>
+                  <span style={{fontSize: '1.5rem'}}>🏦</span>
                 </label>
               </div>
             </div>
