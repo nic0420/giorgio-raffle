@@ -143,7 +143,7 @@ export default function Home() {
             <div style={{backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'left'}}>
               <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${urlTotal || totalAmount}</strong> o el monto total a:</p>
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>nico.adolfo.mp</strong></p>
-              <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100004965726450</strong></p>
+              <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100033661836008</strong></p>
             </div>
             <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
             <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de pago a Mercado Pago.`, '_blank')}>
