@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { Resend } from 'resend';
 
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -37,6 +39,31 @@ export async function POST(request) {
         purchaseId: purchase.id
       }
     });
+
+    // 2.5 Enviar correo de notificación
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await resend.emails.send({
+          from: 'Sorteos Giorgio <onboarding@resend.dev>',
+          to: customer.email,
+          subject: `Reserva de números - ${raffle.title}`,
+          html: `
+            <h2>¡Hola ${customer.name}!</h2>
+            <p>Tus números para el sorteo <strong>${raffle.title}</strong> han sido reservados con éxito.</p>
+            <p><strong>Números elegidos:</strong> ${selectedTickets.join(', ')}</p>
+            <p><strong>Total a pagar:</strong> $${selectedTickets.length * ticketPrice}</p>
+            <br/>
+            <p>Si elegiste Mercado Pago, recordá completar el pago para confirmar tus números. Si elegiste transferencia, por favor enviá tu comprobante a nuestro WhatsApp: <a href="https://wa.me/5493794180451">+5493794180451</a>.</p>
+            <br/>
+            <p>¡Gracias por participar y mucha suerte!</p>
+          `
+        });
+      } catch (emailError) {
+        console.error('Error al enviar el correo:', emailError);
+      }
+    } else {
+      console.warn('RESEND_API_KEY no está configurado en .env. El correo no fue enviado.');
+    }
 
     // 3. Crear Preferencia de Mercado Pago (o saltar si es transferencia)
     if (paymentMethod === 'TRANSFER') {

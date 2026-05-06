@@ -148,7 +148,7 @@ export default function Home() {
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100033661836008</strong></p>
             </div>
             <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
-            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5491100000000?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de transferencia.`, '_blank')}>
+            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5493794180451?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de transferencia.`, '_blank')}>
               Enviar comprobante por WhatsApp
             </button>
             <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
