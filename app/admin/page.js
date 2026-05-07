@@ -378,9 +378,6 @@ export default function AdminPanel() {
         </div>
 
         <div className={styles.panel} style={{ marginTop: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2>Buscar Ganador</h2>
-        <div className={styles.panel} style={{ marginTop: '2rem' }}>
           <h2>Imagen del Sorteo</h2>
           <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
             Sube una imagen para mostrar en la página principal. Recomendado: Imagen cuadrada de relación 1:1 (ej. 1024x1024 o 500x500 píxeles). Max 2MB.
@@ -400,6 +397,7 @@ export default function AdminPanel() {
         <div className={styles.panel} style={{ marginTop: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h2>Buscar Ganador</h2>
+          </div>
           
           <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
             Ingresá los últimos dígitos ganadores de la <strong>Lotería Nacional Nocturna</strong> para buscar al ganador.
