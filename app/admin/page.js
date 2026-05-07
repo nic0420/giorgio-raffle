@@ -17,6 +17,7 @@ export default function AdminPanel() {
   // Raffle Management State
   const [raffleForm, setRaffleForm] = useState({ id: null, title: '', description: '', price: 10000, totalTickets: 100, drawDate: '', imageUrl: '' });
   const [isSavingRaffle, setIsSavingRaffle] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const loadData = () => {
     fetch('/api/admin/stats')
@@ -187,6 +188,43 @@ export default function AdminPanel() {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("La imagen es muy grande. Por favor sube una imagen de menos de 2MB para asegurar un rendimiento óptimo.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result;
+        
+        const res = await fetch('/api/admin/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64String })
+        });
+        
+        const data = await res.json();
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert("¡Imagen actualizada correctamente! Ve a la página principal para ver los cambios.");
+        }
+        setIsUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      alert('Error al subir la imagen');
+      setIsUploadingImage(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className={styles.main} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -240,6 +278,7 @@ export default function AdminPanel() {
 
         {/* GESTIÓN DE SORTEO */}
         <div className={styles.panel} style={{ marginTop: '2rem' }}>
+
           <h2 style={{ marginBottom: '1.5rem' }}>Gestión de Sorteo</h2>
           <form onSubmit={handleSaveRaffle} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
@@ -341,7 +380,26 @@ export default function AdminPanel() {
         <div className={styles.panel} style={{ marginTop: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h2>Buscar Ganador</h2>
+        <div className={styles.panel} style={{ marginTop: '2rem' }}>
+          <h2>Imagen del Sorteo</h2>
+          <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            Sube una imagen para mostrar en la página principal. Recomendado: Imagen cuadrada de relación 1:1 (ej. 1024x1024 o 500x500 píxeles). Max 2MB.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ flex: 1, padding: '0.5rem', border: '1px solid #eaeaea', borderRadius: '8px' }}
+              disabled={isUploadingImage}
+            />
+            {isUploadingImage && <span style={{ color: '#25D366', fontWeight: 'bold' }}>Subiendo...</span>}
           </div>
+        </div>
+
+        <div className={styles.panel} style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2>Buscar Ganador</h2>
           
           <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
             Ingresá los últimos dígitos ganadores de la <strong>Lotería Nacional Nocturna</strong> para buscar al ganador.
