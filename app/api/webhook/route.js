@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import prisma from '@/lib/prisma';
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 // Configura Mercado Pago
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-0000' });
@@ -36,11 +45,35 @@ export async function POST(request) {
             where: { purchaseId: purchaseId },
             data: { status: 'SOLD' }
           });
+          // Obtener los tickets asociados y la rifa para el correo
+          const tickets = await prisma.ticket.findMany({ where: { purchaseId: purchaseId } });
+          const purchaseInfo = await prisma.purchase.findUnique({ where: { id: purchaseId } });
+          const raffleInfo = await prisma.raffle.findUnique({ where: { id: tickets[0].raffleId } });
           
           console.log('Pago aprobado y guardado! Compra ID:', purchaseId);
-          // Aquí se integraría Resend para enviar email
-        }
-      }
+          
+          // Enviar correo de confirmación de pago
+          if (process.env.EMAIL_USER && process.env.EMAIL_PASS && purchaseInfo && raffleInfo) {
+            try {
+              await transporter.sendMail({
+                from: `"Sorteos Giorgio" <${process.env.EMAIL_USER}>`,
+                to: purchaseInfo.customerEmail,
+                subject: `Pago Aprobado - ${raffleInfo.title}`,
+                html: `
+                  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2 style="color: #25D366;">¡Pago Confirmado, ${purchaseInfo.customerName}! 🎉</h2>
+                    <p>Tu pago por los números del sorteo <strong>${raffleInfo.title}</strong> ha sido aprobado con éxito.</p>
+                    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                      <p style="margin: 0; font-size: 16px;"><strong>Tus Números Confirmados:</strong> <span style="color: #25D366; font-size: 18px; font-weight: bold;">${tickets.map(t => t.number).join(', ')}</span></p>
+                    </div>
+                    <p>¡Ya estás participando oficialmente! Te deseamos muchísima suerte.</p>
+                  </div>
+                `
+              });
+            } catch (emailError) {
+              console.error('Error al enviar el correo de confirmación:', emailError);
+            }
+          }
     }
 
     return NextResponse.json({ success: true });

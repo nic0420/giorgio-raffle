@@ -18,6 +18,7 @@ export default function Home() {
   // Status params
   const [urlStatus, setUrlStatus] = useState(null);
   const [urlTotal, setUrlTotal] = useState(null);
+  const [urlTickets, setUrlTickets] = useState(null);
 
   useEffect(() => {
     // Check URL parameters for payment status
@@ -25,11 +26,15 @@ export default function Home() {
       const urlParams = new URLSearchParams(window.location.search);
       const status = urlParams.get('status');
       const totalParam = urlParams.get('total');
+      const ticketsParam = urlParams.get('tickets');
       if (status) {
         setUrlStatus(status);
       }
       if (totalParam) {
         setUrlTotal(totalParam);
+      }
+      if (ticketsParam) {
+        setUrlTickets(ticketsParam);
       }
     }
 
@@ -148,7 +153,7 @@ export default function Home() {
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100033661836008</strong></p>
             </div>
             <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
-            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5493794180451?text=Hola! Reservé números en la rifa. Acá te mando el comprobante de transferencia.`, '_blank')}>
+            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5493794180451?text=Hola! Reservé los números ${urlTickets || selectedTickets.join(', ')} en la rifa. Acá te mando el comprobante de transferencia.`, '_blank')}>
               Enviar comprobante por WhatsApp
             </button>
             <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
@@ -163,6 +168,12 @@ export default function Home() {
           <div className={styles.modalContent}>
             <h2>¡Pago Aprobado! 🎉</h2>
             <p>Tus números están confirmados para el sorteo.</p>
+            <p style={{fontSize: '0.85rem'}}>Te enviamos un correo con los detalles.</p>
+            {urlTickets && (
+              <button className={styles.waButton} onClick={() => window.open(`https://wa.me/5493794180451?text=Hola! Acabo de pagar los números ${urlTickets} a través de Mercado Pago. ¡Gracias!`, '_blank')}>
+                Avisar por WhatsApp
+              </button>
+            )}
             <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
           </div>
         </div>

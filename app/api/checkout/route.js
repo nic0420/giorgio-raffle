@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -41,28 +47,32 @@ export async function POST(request) {
     });
 
     // 2.5 Enviar correo de notificación
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       try {
-        await resend.emails.send({
-          from: 'Sorteos Giorgio <onboarding@resend.dev>',
+        await transporter.sendMail({
+          from: `"Sorteos Giorgio" <${process.env.EMAIL_USER}>`,
           to: customer.email,
-          subject: `Reserva de números - ${raffle.title}`,
+          subject: `Tus números para el sorteo - ${raffle.title}`,
           html: `
-            <h2>¡Hola ${customer.name}!</h2>
-            <p>Tus números para el sorteo <strong>${raffle.title}</strong> han sido reservados con éxito.</p>
-            <p><strong>Números elegidos:</strong> ${selectedTickets.join(', ')}</p>
-            <p><strong>Total a pagar:</strong> $${selectedTickets.length * ticketPrice}</p>
-            <br/>
-            <p>Si elegiste Mercado Pago, recordá completar el pago para confirmar tus números. Si elegiste transferencia, por favor enviá tu comprobante a nuestro WhatsApp: <a href="https://wa.me/5493794180451">+5493794180451</a>.</p>
-            <br/>
-            <p>¡Gracias por participar y mucha suerte!</p>
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+              <h2 style="color: #333;">¡Hola ${customer.name}!</h2>
+              <p>Tus números para el sorteo <strong>${raffle.title}</strong> han sido registrados con éxito.</p>
+              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 0; font-size: 16px;"><strong>Tus Números:</strong> <span style="color: #d4af37; font-size: 18px; font-weight: bold;">${selectedTickets.join(', ')}</span></p>
+                <p style="margin: 10px 0 0 0;"><strong>Total a pagar:</strong> $${selectedTickets.length * ticketPrice}</p>
+              </div>
+              <p>Si elegiste <strong>Mercado Pago</strong>, recordá que tu compra se confirma automáticamente al pagar.</p>
+              <p>Si elegiste <strong>Transferencia</strong>, por favor enviá tu comprobante a nuestro WhatsApp haciendo clic aquí: <br/><a href="https://wa.me/5493794180451?text=Hola! Reservé los números ${selectedTickets.join(', ')} en la rifa. Acá te mando el comprobante de transferencia." style="display: inline-block; margin-top: 10px; padding: 10px 15px; background-color: #25D366; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Enviar comprobante por WhatsApp</a>.</p>
+              <br/>
+              <p>¡Gracias por participar y mucha suerte!</p>
+            </div>
           `
         });
       } catch (emailError) {
         console.error('Error al enviar el correo:', emailError);
       }
     } else {
-      console.warn('RESEND_API_KEY no está configurado en .env. El correo no fue enviado.');
+      console.warn('Las variables EMAIL_USER y EMAIL_PASS no están configuradas en .env. El correo no fue enviado.');
     }
 
     // 3. Crear Preferencia de Mercado Pago (o saltar si es transferencia)
@@ -70,7 +80,7 @@ export async function POST(request) {
       return NextResponse.json({
         success: true,
         purchaseId: purchase.id,
-        redirect: `/?status=pending_manual&total=${selectedTickets.length * ticketPrice}`
+        redirect: `/?status=pending_manual&total=${selectedTickets.length * ticketPrice}&tickets=${selectedTickets.join(',')}`
       });
     }
 
@@ -101,9 +111,9 @@ export async function POST(request) {
           email: customer.email,
         },
         back_urls: {
-          success: `${origin}/?status=success`,
+          success: `${origin}/?status=success&tickets=${selectedTickets.join(',')}`,
           failure: `${origin}/?status=failure`,
-          pending: `${origin}/?status=pending`,
+          pending: `${origin}/?status=pending&tickets=${selectedTickets.join(',')}`,
         },
         auto_return: 'approved',
         external_reference: `purchase_${purchase.id}`,
