@@ -74,6 +74,8 @@ export async function POST(request) {
               console.error('Error al enviar el correo de confirmación:', emailError);
             }
           }
+        }
+      }
     }
 
     return NextResponse.json({ success: true });
