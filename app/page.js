@@ -150,6 +150,7 @@ export default function Home() {
               <p style={{margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#333'}}>Por favor transfiere <strong>${urlTotal || totalAmount}</strong> o el monto total a:</p>
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>Nombre: <strong>Jose Maria Vigiano</strong></p>
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>CUIT/CUIL: <strong>20-38309837-9</strong></p>
+              <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>aromasya</strong></p>
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>CVU: <strong>0000003100033661836008</strong></p>
             </div>
             <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
