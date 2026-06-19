@@ -103,7 +103,7 @@ export async function PATCH(request) {
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS && raffleInfo) {
       try {
         await transporter.sendMail({
-          from: `"Sorteos Giorgio" <${process.env.EMAIL_USER}>`,
+          from: `"Sorteos NBG" <${process.env.EMAIL_USER}>`,
           to: purchase.customerEmail,
           subject: `Pago Aprobado - ${raffleInfo.title}`,
           html: `

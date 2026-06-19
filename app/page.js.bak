@@ -4,14 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 
 export default function Home() {
-  const FILAS = [
-    [66, 38, 31, 49, 17], [1, 21, 41, 61, 81], [2, 22, 42, 62, 82], [3, 23, 43, 63, 83], [4, 24, 44, 64, 84],
-    [5, 25, 45, 65, 85], [6, 26, 46, 0, 86], [7, 27, 47, 67, 87], [8, 28, 48, 68, 88], [9, 29, 60, 69, 89],
-    [10, 30, 50, 70, 90], [11, 40, 51, 71, 91], [12, 32, 52, 72, 92], [13, 33, 53, 73, 93], [14, 34, 54, 74, 94],
-    [15, 35, 55, 75, 95], [16, 36, 56, 76, 96], [80, 37, 57, 77, 97], [18, 20, 58, 78, 98], [19, 39, 59, 79, 99]
-  ];
-  const [selectedFilas, setSelectedFilas] = useState([]);
-  const selectedTickets = selectedFilas.flatMap(i => FILAS[i]);
+  const [selectedTickets, setSelectedTickets] = useState([]);
   const [customer, setCustomer] = useState({ name: '', whatsapp: '', email: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('MERCADOPAGO');
@@ -65,10 +58,9 @@ export default function Home() {
     loadData();
   }, []);
 
-  const ticketPrice = 1800;
-  const totalFilas = FILAS.length;
-  const soldFilasCount = FILAS.filter(fila => fila.some(num => ticketsStatus[num] === 'SOLD')).length;
+  const ticketPrice = raffleInfo.price;
   const totalTickets = raffleInfo.totalTickets;
+  const soldCount = Object.values(ticketsStatus).filter(s => s === 'SOLD').length;
   const isRaffleActive = raffleInfo.status === 'ACTIVE';
 
   // Countdown logic
@@ -98,24 +90,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [raffleInfo.drawDate]);
 
-  const handleFilaClick = (filaIndex) => {
-    if (!isRaffleActive) return;
-    const filaNumbers = FILAS[filaIndex];
-    const isSoldOrReserved = filaNumbers.some(num => ticketsStatus[num] === 'SOLD' || ticketsStatus[num] === 'RESERVED');
-    if (isSoldOrReserved) return;
-    
-    if (selectedFilas.includes(filaIndex)) {
-      setSelectedFilas(selectedFilas.filter(f => f !== filaIndex));
-    } else {
-      if (selectedFilas.length >= 5) {
-        alert("Podés comprar hasta 5 filas por persona.");
-        return;
-      }
-      setSelectedFilas([...selectedFilas, filaIndex].sort((a,b) => a - b));
-    }
-  };
-
-  const _unused_handleTicketClick = (num) => {
+  const handleTicketClick = (num) => {
     if (!isRaffleActive) return;
     const status = ticketsStatus[num];
     if (status === 'SOLD' || status === 'RESERVED') return;
@@ -160,8 +135,7 @@ export default function Home() {
     }
   };
 
-  const filasCount = selectedFilas.length;
-  const totalAmount = Math.floor(filasCount / 2) * 3000 + (filasCount % 2) * 1800;
+  const totalAmount = selectedTickets.length * ticketPrice;
 
   const renderStatusModal = () => {
     if (!urlStatus) return null;
@@ -177,7 +151,7 @@ export default function Home() {
               <p style={{margin: '0 0 0.5rem', color: '#000'}}>Alias: <strong>nico.adolfo.mp</strong></p>
             </div>
             <p style={{fontSize: '0.85rem'}}>Una vez que transfieras, <strong>hacé clic abajo para enviarnos el comprobante</strong> y confirmaremos tus números definitivamente.</p>
-            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/543794662479?text=Hola! Reservé los números ${urlTickets || 'Filas ' + selectedFilas.map(i => i+1).join(', ')} en la rifa. Acá te mando el comprobante de transferencia.`, '_blank')}>
+            <button className={styles.waButton} onClick={() => window.open(`https://wa.me/543794662479?text=Hola! Reservé los números ${urlTickets || selectedTickets.join(', ')} en la rifa. Acá te mando el comprobante de transferencia.`, '_blank')}>
               Enviar comprobante por WhatsApp
             </button>
             <button className={styles.closeBtn} onClick={() => window.location.href = '/'}>Cerrar</button>
@@ -297,7 +271,7 @@ export default function Home() {
           <div className={styles.heroImageWrapper}>
             <img src={raffleInfo.images && raffleInfo.images.length > 0 ? raffleInfo.images[0] : "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=800"} alt="Premio del Sorteo" className={styles.heroImage} />
             <div className={styles.floatingBadge}>
-              <strong>👥 HASTA 5 FILAS<br/>POR PERSONA</strong>
+              <strong>👥 HASTA 5 NÚMEROS<br/>POR PERSONA</strong>
               <span>Para que más personas<br/>tengan la oportunidad<br/>de ganar.</span>
             </div>
           </div>
@@ -310,9 +284,9 @@ export default function Home() {
           <div className={styles.statusItem}>
             <div className={styles.statusLabel}>NÚMEROS VENDIDOS</div>
             <div className={styles.statusValueWithBar}>
-              <div className={styles.statusValue}>{soldFilasCount} / {totalFilas}</div>
+              <div className={styles.statusValue}>{soldCount} / {totalTickets}</div>
               <div className={styles.progressBar}>
-                <div className={styles.progressFill} style={{width: `${(soldFilasCount/totalFilas)*100}%`}}></div>
+                <div className={styles.progressFill} style={{width: `${(soldCount/totalTickets)*100}%`}}></div>
               </div>
             </div>
           </div>
@@ -343,9 +317,9 @@ export default function Home() {
           <div className={`${styles.panel}`}>
             <div className={styles.panelHeader}>
               <div>
-                <h2>ELEGÍ TUS FILAS</h2>
+                <h2>ELEGÍ TUS NÚMEROS</h2>
                 <p className={styles.panelDesc}>
-                  Seleccioná tus filas favoritas (cada fila incluye 5 números)
+                  Seleccioná tus números favoritos del 1 al {totalTickets}
                 </p>
               </div>
               <div className={styles.legend}>
@@ -383,21 +357,21 @@ export default function Home() {
             </div>
             
             <div className={styles.infoBox}>
-              👥 <strong>Podés comprar hasta 5 filas por persona.</strong> ¡Sumá más chances, pero dejemos lugar para todos!
+              👥 <strong>Podés comprar hasta 5 números por persona.</strong> ¡Sumá más chances, pero dejemos lugar para todos!
             </div>
 
             {selectedTickets.length > 0 && (
               <div className={styles.bottomSummary}>
                 <div>
-                  <div className={styles.bottomSummaryLabel}>TUS FILAS SELECCIONADAS ({selectedFilas.length})</div>
+                  <div className={styles.bottomSummaryLabel}>TUS NÚMEROS SELECCIONADOS ({selectedTickets.length})</div>
                   <div className={styles.bottomSummaryBubbles}>
-                    {selectedFilas.map(idx => <span key={idx} className={styles.bubble}>{idx + 1}</span>)}
+                    {selectedTickets.map(num => <span key={num} className={styles.bubble}>{num}</span>)}
                   </div>
                 </div>
                 <div className={styles.bottomSummaryTotal}>
                   <div className={styles.bottomSummaryLabel}>TOTAL A PAGAR</div>
                   <div className={styles.bottomSummaryAmount}>${totalAmount.toLocaleString('es-AR')}</div>
-                  <div className={styles.bottomSummaryUnit}></div>
+                  <div className={styles.bottomSummaryUnit}>(${ticketPrice.toLocaleString('es-AR')} c/u)</div>
                 </div>
               </div>
             )}
@@ -521,7 +495,7 @@ export default function Home() {
           <div className={styles.infoCard}>
             <h4 className={styles.infoCardTitle}>¿CÓMO FUNCIONA?</h4>
             <ol className={styles.stepsList}>
-              <li>Elegís tus filas favoritas.</li>
+              <li>Elegís tus números del 1 al {totalTickets}.</li>
               <li>Completás tus datos y pagás de forma segura con Mercado Pago.</li>
               <li>El comprobante y tus números llegarán por WhatsApp/Email.</li>
               <li>El sorteo se realizará por <strong>Lotería Nacional Nocturna</strong> el día <strong>{new Date(raffleInfo.drawDate).toLocaleDateString('es-AR')}</strong>.</li>
@@ -576,7 +550,7 @@ export default function Home() {
             <span style={{fontSize: '1.2rem', marginRight: '0.5rem'}}>⭐</span>
             <div>
               <strong>POCAS POSIBILIDADES</strong>
-              <div>Solo {totalFilas} filas disponibles.</div>
+              <div>Solo {totalTickets} números disponibles.</div>
             </div>
           </div>
           <div className={styles.footerCol}>

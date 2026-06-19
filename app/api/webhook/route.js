@@ -56,7 +56,7 @@ export async function POST(request) {
           if (process.env.EMAIL_USER && process.env.EMAIL_PASS && purchaseInfo && raffleInfo) {
             try {
               await transporter.sendMail({
-                from: `"Sorteos Giorgio" <${process.env.EMAIL_USER}>`,
+                from: `"Sorteos NBG" <${process.env.EMAIL_USER}>`,
                 to: purchaseInfo.customerEmail,
                 subject: `Pago Aprobado - ${raffleInfo.title}`,
                 html: `
